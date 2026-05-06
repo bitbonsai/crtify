@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo.png" alt="crtify" width="400" />
+  <img src="logo.webp" alt="crtify" width="400" />
 </p>
 
 <p align="center">
