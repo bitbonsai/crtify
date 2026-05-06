@@ -31,9 +31,9 @@ const defaults: Required<Omit<CrtifyOptions, "preset">> = {
   bloomRadius: 2,
   bloomStrength: 0.3,
   vignetteStrength: 1,
-  noise: 0.08,
-  brightness: 0.85,
-  contrast: 1.3,
+  noise: 0.09,
+  brightness: 0.84,
+  contrast: 1.4,
   phosphorDetail: 0,
 };
 

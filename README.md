@@ -40,9 +40,9 @@ Output files are saved as `<name>-crt.webp` alongside the original (or in `--out
 --spacing <n>        Scanline spacing in px, scales with resolution (default: 3)
 --bloom <0-1>        Bloom/glow strength (default: 0.3)
 --vignette <0-1>     Vignette strength (default: 1)
---noise <0-1>        Noise amount (default: 0.08)
---brightness <n>     Brightness multiplier (default: 0.85)
---contrast <n>       Contrast multiplier (default: 1.3)
+--noise <0-1>        Noise amount (default: 0.09)
+--brightness <n>     Brightness multiplier (default: 0.84)
+--contrast <n>       Contrast multiplier (default: 1.4)
 --phosphor <0-1>     Phosphor subpixel detail (default: 0, off)
 --green <hex>        Primary phosphor color (default: #33ff33)
 --outdir <dir>       Output directory for batch mode
