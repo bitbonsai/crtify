@@ -58,8 +58,7 @@ function createScanlines(
   spacing: number,
   opacity: number,
   color: [number, number, number],
-  phaseOffset: number,
-  blur: number
+  phaseOffset: number
 ): Buffer {
   const channels = 4;
   const buf = Buffer.alloc(width * height * channels);
@@ -171,10 +170,6 @@ function resolveOptions(opts: CrtifyOptions): Required<Omit<CrtifyOptions, "pres
   };
 }
 
-async function rawToPng(buf: Buffer, width: number, height: number, channels: 4): Promise<Buffer> {
-  return sharp(buf, { raw: { width, height, channels } }).png().toBuffer();
-}
-
 export async function crtify(
   input: string | Buffer,
   opts: CrtifyOptions = {}
@@ -183,16 +178,16 @@ export async function crtify(
   const [bR, bG, bB] = hexToRgb(o.greenBright);
   const [dR, dG, dB] = hexToRgb(o.greenDim);
 
-  const meta = await sharp(input).metadata();
-  const width = meta.width!;
-  const height = meta.height!;
+  // 1. Single decode: greyscale + brightness/contrast + metadata
+  const pipeline = sharp(input);
+  const { width: w, height: h } = await pipeline.metadata();
+  const width = w!;
+  const height = h!;
 
-  // Resolution-aware scanline spacing
   const scaleFactor = height / REFERENCE_HEIGHT;
   const effectiveSpacing = Math.max(1, Math.round(o.scanlineSpacing * scaleFactor));
 
-  // 1. Greyscale + brightness/contrast
-  const greyBuf = await sharp(input)
+  const greyBuf = await pipeline
     .greyscale()
     .modulate({ brightness: o.brightness })
     .linear(o.contrast, -(128 * o.contrast - 128))
@@ -235,8 +230,8 @@ export async function crtify(
 
   // 4. Merge both scanline layers into one buffer
   const color: [number, number, number] = [bR, bG, bB];
-  const scan1 = createScanlines(width, height, effectiveSpacing, o.scanlineOpacity, color, 0, 0.5);
-  const scan2 = createScanlines(width, height, effectiveSpacing, o.scanlineOpacity * 0.5, color, 0.7, 1.2);
+  const scan1 = createScanlines(width, height, effectiveSpacing, o.scanlineOpacity, color, 0);
+  const scan2 = createScanlines(width, height, effectiveSpacing, o.scanlineOpacity * 0.5, color, 0.7);
 
   const mergedScan = Buffer.alloc(width * height * 4);
   for (let i = 0; i < mergedScan.length; i += 4) {
@@ -254,28 +249,20 @@ export async function crtify(
   const vignetteBuf = createVignette(width, height, o.vignetteStrength);
   const noiseBuf = createNoise(width, height, o.noise);
 
-  // 5. Composite: 3 layers instead of 5
+  const raw4 = { width, height, channels: 4 as const };
+
+  const blurredScan = await sharp(mergedScan, { raw: raw4 })
+    .blur(0.6)
+    .raw()
+    .toBuffer();
+
+  // 5. Composite with raw buffers (no PNG round-trips)
   const composited = await sharp(base)
     .composite([
-      {
-        input: await rawToPng(bloomed, width, height, 4),
-        blend: "screen",
-      },
-      {
-        input: await sharp(mergedScan, { raw: { width, height, channels: 4 } })
-          .blur(0.6)
-          .png()
-          .toBuffer(),
-        blend: "exclusion",
-      },
-      {
-        input: await rawToPng(vignetteBuf, width, height, 4),
-        blend: "over",
-      },
-      {
-        input: await rawToPng(noiseBuf, width, height, 4),
-        blend: "soft-light",
-      },
+      { input: bloomed, raw: raw4, blend: "screen" as const },
+      { input: blurredScan, raw: raw4, blend: "exclusion" as const },
+      { input: vignetteBuf, raw: raw4, blend: "over" as const },
+      { input: noiseBuf, raw: raw4, blend: "soft-light" as const },
     ]);
 
   // 6. Post-processing: phosphor subpixels
