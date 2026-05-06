@@ -105,20 +105,39 @@ describe("crtify", () => {
 });
 
 describe("pexels integration", () => {
-  const PEXELS_URLS = [
-    "https://images.pexels.com/photos/3075993/pexels-photo-3075993.jpeg?auto=compress&cs=tinysrgb&w=600",
-    "https://images.pexels.com/photos/1779487/pexels-photo-1779487.jpeg?auto=compress&cs=tinysrgb&w=600",
-    "https://images.pexels.com/photos/2387793/pexels-photo-2387793.jpeg?auto=compress&cs=tinysrgb&w=600",
-  ];
   const PRESETS: Preset[] = ["green", "amber", "white"];
 
-  test("download, process, and preview 3 images", async () => {
-    const outputs: string[] = [];
+  test("download, process, and preview 3 random images", async () => {
+    const page = Math.floor(Math.random() * 50) + 1;
+    const resp = await fetch(
+      `https://api.pexels.com/v1/curated?per_page=3&page=${page}`,
+      { headers: { Authorization: process.env.PEXELS_API_KEY ?? "" } }
+    );
 
-    for (let i = 0; i < PEXELS_URLS.length; i++) {
-      const resp = await fetch(PEXELS_URLS[i]);
-      expect(resp.ok).toBe(true);
-      const buf = Buffer.from(await resp.arrayBuffer());
+    let urls: string[];
+    if (resp.ok) {
+      const data = await resp.json() as { photos: { src: { medium: string } }[] };
+      urls = data.photos.map((p) => p.src.medium);
+    } else {
+      // Fallback: random photo IDs from a large pool
+      const pool = [
+        1252869, 3075993, 1779487, 2387793, 1563356, 1591447, 2104152,
+        417074, 2662116, 1287145, 3184291, 574071, 1181671, 1029604,
+        1181244, 3861969, 2088170, 1181263, 3183150, 2582937, 1181292,
+        3184339, 1181316, 1181354, 1181425, 2102416, 3182812, 1714208,
+        2599244, 3183132, 943096, 1181467, 2115217, 3184405, 1181675,
+      ];
+      const shuffled = pool.sort(() => Math.random() - 0.5);
+      urls = shuffled.slice(0, 3).map(
+        (id) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=600`
+      );
+    }
+
+    const outputs: string[] = [];
+    for (let i = 0; i < urls.length; i++) {
+      const imgResp = await fetch(urls[i]);
+      expect(imgResp.ok).toBe(true);
+      const buf = Buffer.from(await imgResp.arrayBuffer());
 
       const out = resolve(tmpdir(), `crtify-pexels-${i}.webp`);
       await crtifyFile(buf as any, out, { preset: PRESETS[i] });
