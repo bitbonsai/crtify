@@ -178,11 +178,17 @@ export async function crtify(
   const [bR, bG, bB] = hexToRgb(o.greenBright);
   const [dR, dG, dB] = hexToRgb(o.greenDim);
 
-  // 1. Single decode: greyscale + brightness/contrast + metadata
+  // 1. Single decode: extract alpha + greyscale + brightness/contrast
   const pipeline = sharp(input);
-  const { width: w, height: h } = await pipeline.metadata();
+  const { width: w, height: h, channels: inputChannels } = await pipeline.metadata();
   const width = w!;
   const height = h!;
+  const hasAlpha = inputChannels === 4;
+
+  let alphaBuf: Buffer | null = null;
+  if (hasAlpha) {
+    alphaBuf = await sharp(input).extractChannel(3).raw().toBuffer();
+  }
 
   const scaleFactor = height / REFERENCE_HEIGHT;
   const effectiveSpacing = Math.max(1, Math.round(o.scanlineSpacing * scaleFactor));
@@ -265,16 +271,22 @@ export async function crtify(
       { input: noiseBuf, raw: raw4, blend: "soft-light" as const },
     ]);
 
-  // 6. Post-processing: phosphor subpixels
+  // 6. Post-processing: phosphor subpixels + restore alpha
+  let finalBuf = await composited.ensureAlpha().raw().toBuffer();
+
   if (o.phosphorDetail > 0) {
-    let raw = await composited.ensureAlpha().raw().toBuffer();
-    raw = applyPhosphorSubpixels(raw, width, height, o.phosphorDetail);
-    return sharp(raw, { raw: { width, height, channels: 4 } })
-      .webp({ quality: 90 })
-      .toBuffer();
+    finalBuf = applyPhosphorSubpixels(finalBuf, width, height, o.phosphorDetail);
   }
 
-  return composited.webp({ quality: 90 }).toBuffer();
+  if (alphaBuf) {
+    for (let i = 0; i < width * height; i++) {
+      finalBuf[i * 4 + 3] = alphaBuf[i];
+    }
+  }
+
+  return sharp(finalBuf, { raw: { width, height, channels: 4 } })
+    .webp({ quality: 90 })
+    .toBuffer();
 }
 
 export async function crtifyFile(
