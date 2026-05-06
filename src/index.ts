@@ -20,6 +20,7 @@ export interface CrtifyOptions {
   noise?: number;
   brightness?: number;
   contrast?: number;
+  distortion?: number;
 }
 
 const defaults: Required<Omit<CrtifyOptions, "preset">> = {
@@ -33,6 +34,7 @@ const defaults: Required<Omit<CrtifyOptions, "preset">> = {
   noise: 0.08,
   brightness: 0.85,
   contrast: 1.3,
+  distortion: 0.15,
 };
 
 const REFERENCE_HEIGHT = 600;
@@ -143,6 +145,61 @@ function resolveOptions(opts: CrtifyOptions): Required<Omit<CrtifyOptions, "pres
   };
 }
 
+function applyBarrelDistortion(
+  src: Buffer,
+  width: number,
+  height: number,
+  channels: number,
+  strength: number
+): Buffer {
+  const dst = Buffer.alloc(src.length);
+  const cx = width / 2;
+  const cy = height / 2;
+  const maxR = Math.sqrt(cx * cx + cy * cy);
+  const k1 = strength * 0.5;
+  const k2 = strength * 0.3;
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const dx = (x - cx) / maxR;
+      const dy = (y - cy) / maxR;
+      const r2 = dx * dx + dy * dy;
+      const r4 = r2 * r2;
+      const factor = 1 + k1 * r2 + k2 * r4;
+      const srcX = cx + dx * factor * maxR;
+      const srcY = cy + dy * factor * maxR;
+
+      const di = (y * width + x) * channels;
+
+      if (srcX < 0 || srcX >= width - 1 || srcY < 0 || srcY >= height - 1) {
+        for (let c = 0; c < channels; c++) dst[di + c] = 0;
+        continue;
+      }
+
+      // Bilinear interpolation
+      const x0 = Math.floor(srcX);
+      const y0 = Math.floor(srcY);
+      const fx = srcX - x0;
+      const fy = srcY - y0;
+
+      const i00 = (y0 * width + x0) * channels;
+      const i10 = (y0 * width + x0 + 1) * channels;
+      const i01 = ((y0 + 1) * width + x0) * channels;
+      const i11 = ((y0 + 1) * width + x0 + 1) * channels;
+
+      for (let c = 0; c < channels; c++) {
+        const v = (1 - fx) * (1 - fy) * src[i00 + c]
+          + fx * (1 - fy) * src[i10 + c]
+          + (1 - fx) * fy * src[i01 + c]
+          + fx * fy * src[i11 + c];
+        dst[di + c] = Math.round(v);
+      }
+    }
+  }
+
+  return dst;
+}
+
 async function rawToPng(buf: Buffer, width: number, height: number, channels: 4): Promise<Buffer> {
   return sharp(buf, { raw: { width, height, channels } }).png().toBuffer();
 }
@@ -227,7 +284,7 @@ export async function crtify(
   const noiseBuf = createNoise(width, height, o.noise);
 
   // 5. Composite: 3 layers instead of 5
-  const result = await sharp(base)
+  const composited = await sharp(base)
     .composite([
       {
         input: await rawToPng(bloomed, width, height, 4),
@@ -248,11 +305,18 @@ export async function crtify(
         input: await rawToPng(noiseBuf, width, height, 4),
         blend: "soft-light",
       },
-    ])
-    .webp({ quality: 90 })
-    .toBuffer();
+    ]);
 
-  return result;
+  // 6. Barrel distortion
+  if (o.distortion > 0) {
+    const raw = await composited.ensureAlpha().raw().toBuffer();
+    const distorted = applyBarrelDistortion(raw, width, height, 4, o.distortion);
+    return sharp(distorted, { raw: { width, height, channels: 4 } })
+      .webp({ quality: 90 })
+      .toBuffer();
+  }
+
+  return composited.webp({ quality: 90 }).toBuffer();
 }
 
 export async function crtifyFile(
