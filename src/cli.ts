@@ -20,7 +20,6 @@ Options:
   --noise <0-1>        Noise amount (default: 0.08)
   --brightness <n>     Brightness multiplier (default: 0.85)
   --contrast <n>       Contrast multiplier (default: 1.3)
-  --distortion <0-1>   Barrel distortion strength (default: 0.15, 0 to disable)
   --phosphor <0-1>     Phosphor subpixel detail (default: 0, off)
   --green <hex>        Primary phosphor color (default: #33ff33)
   --watch              Re-process on file change
@@ -75,9 +74,6 @@ function parseArgs(args: string[]): ParsedArgs {
         break;
       case "--contrast":
         opts.contrast = parseFloat(args[++i]);
-        break;
-      case "--distortion":
-        opts.distortion = parseFloat(args[++i]);
         break;
       case "--phosphor":
         opts.phosphorDetail = parseFloat(args[++i]);
