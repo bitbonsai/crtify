@@ -1,10 +1,16 @@
-<p align="center">
-  <img src="logo.webp" alt="crtify" width="400" />
-</p>
 
+
+  <h1  align="center">
+    CRTify
+</h1>
+<p align="center">
+  <img src="logo.png" alt="crtify" width="256" />
+</p>
 <p align="center">
   Convert any image into a CRT phosphor terminal aesthetic.
 </p>
+
+
 
 ---
 
