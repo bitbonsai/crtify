@@ -36,7 +36,7 @@ Output files are saved as `<name>-crt.webp` alongside the original (or in `--out
 
 ```
 --preset <name>      Phosphor preset: green (default), amber, white
---scanlines <0-1>    Scanline opacity (default: 0.4)
+--scanlines <0-1>    Scanline opacity (default: 0.3)
 --spacing <n>        Scanline spacing in px, scales with resolution (default: 3)
 --bloom <0-1>        Bloom/glow strength (default: 0.3)
 --vignette <0-1>     Vignette strength (default: 1)

@@ -26,7 +26,7 @@ export interface CrtifyOptions {
 const defaults: Required<Omit<CrtifyOptions, "preset">> = {
   greenBright: "#33ff33",
   greenDim: "#000000",
-  scanlineOpacity: 0.4,
+  scanlineOpacity: 0.3,
   scanlineSpacing: 3,
   bloomRadius: 2,
   bloomStrength: 0.3,
