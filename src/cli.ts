@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 import { crtifyFile, type CrtifyOptions, type Preset } from "./index.js";
 import { watch } from "fs";
