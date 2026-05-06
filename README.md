@@ -17,7 +17,7 @@
 ## Install
 
 ```bash
-bun i -g crtify
+bun i -g @bitbonsai/crtify
 ```
 
 ## CLI
@@ -58,7 +58,7 @@ Output files are saved as `<name>-crt.webp` alongside the original (or in `--out
 ## API
 
 ```typescript
-import { crtify, crtifyFile } from "crtify";
+import { crtify, crtifyFile } from "@bitbonsai/crtify";
 
 // Buffer in, Buffer out
 const webpBuffer = await crtify("photo.jpg", {
