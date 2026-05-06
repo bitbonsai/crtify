@@ -7,9 +7,15 @@
   "bin": {
     "crtify": "src/cli.ts"
   },
+  "files": ["src/index.ts", "src/cli.ts"],
   "scripts": {
     "test": "bun test"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bitbonsai/crtify"
+  },
+  "author": "bitbonsai",
   "keywords": ["crt", "image", "filter", "phosphor", "terminal", "retro", "green-screen"],
   "license": "MIT",
   "dependencies": {
