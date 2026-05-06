@@ -1,5 +1,5 @@
 {
-  "name": "crtify",
+  "name": "@bitbonsai/crtify",
   "version": "0.1.0",
   "description": "Convert images to CRT phosphor terminal aesthetic",
   "type": "module",
