@@ -187,10 +187,17 @@ function applyBarrelDistortion(
   const k1 = strength * 0.5;
   const k2 = strength * 0.3;
 
+  // Compute distortion factor at the edge midpoints (worst-case for cropping)
+  // to zoom in enough that the distorted image fills the rectangle
+  const edgeR = cx / maxR;
+  const edgeR2 = edgeR * edgeR;
+  const edgeFactor = 1 + k1 * edgeR2 + k2 * edgeR2 * edgeR2;
+  const zoom = 1 / edgeFactor;
+
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      const dx = (x - cx) / maxR;
-      const dy = (y - cy) / maxR;
+      const dx = (x - cx) / maxR * zoom;
+      const dy = (y - cy) / maxR * zoom;
       const r2 = dx * dx + dy * dy;
       const r4 = r2 * r2;
       const factor = 1 + k1 * r2 + k2 * r4;
