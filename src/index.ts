@@ -21,6 +21,7 @@ export interface CrtifyOptions {
   brightness?: number;
   contrast?: number;
   distortion?: number;
+  phosphorDetail?: number;
 }
 
 const defaults: Required<Omit<CrtifyOptions, "preset">> = {
@@ -35,6 +36,7 @@ const defaults: Required<Omit<CrtifyOptions, "preset">> = {
   brightness: 0.85,
   contrast: 1.3,
   distortion: 0.15,
+  phosphorDetail: 0,
 };
 
 const REFERENCE_HEIGHT = 600;
@@ -134,6 +136,32 @@ function createNoise(
   }
 
   return buf;
+}
+
+function applyPhosphorSubpixels(
+  src: Buffer,
+  width: number,
+  height: number,
+  detail: number
+): Buffer {
+  const dst = Buffer.from(src);
+  const blend = detail;
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * 4;
+      const col = x % 3;
+      // Each pixel keeps its designated channel at full, others dimmed
+      const keepR = col === 0 ? 1 : 1 - blend;
+      const keepG = col === 1 ? 1 : 1 - blend;
+      const keepB = col === 2 ? 1 : 1 - blend;
+      dst[i] = Math.round(src[i] * keepR);
+      dst[i + 1] = Math.round(src[i + 1] * keepG);
+      dst[i + 2] = Math.round(src[i + 2] * keepB);
+    }
+  }
+
+  return dst;
 }
 
 function resolveOptions(opts: CrtifyOptions): Required<Omit<CrtifyOptions, "preset">> {
@@ -307,11 +335,16 @@ export async function crtify(
       },
     ]);
 
-  // 6. Barrel distortion
-  if (o.distortion > 0) {
-    const raw = await composited.ensureAlpha().raw().toBuffer();
-    const distorted = applyBarrelDistortion(raw, width, height, 4, o.distortion);
-    return sharp(distorted, { raw: { width, height, channels: 4 } })
+  // 6. Post-processing: phosphor subpixels + barrel distortion
+  if (o.phosphorDetail > 0 || o.distortion > 0) {
+    let raw = await composited.ensureAlpha().raw().toBuffer();
+    if (o.phosphorDetail > 0) {
+      raw = applyPhosphorSubpixels(raw, width, height, o.phosphorDetail);
+    }
+    if (o.distortion > 0) {
+      raw = applyBarrelDistortion(raw, width, height, 4, o.distortion);
+    }
+    return sharp(raw, { raw: { width, height, channels: 4 } })
       .webp({ quality: 90 })
       .toBuffer();
   }

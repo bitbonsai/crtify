@@ -1,3 +1,3 @@
 // Bun Snapshot v1, https://bun.sh/docs/test/snapshots
 
-exports[`crtify snapshot regression: green-preset-fixture 1`] = `"b6263c41989fc5bec03a0dca2409f40226599f72c873c782439851ff21a2db28"`;
+exports[`crtify snapshot regression: green-preset-fixture 1`] = `"fc5121ec08939561a8cac199c6fa6611e4899db4589fd258411d4722ea02305e"`;
