@@ -115,7 +115,8 @@ function createVignette(
 function createNoise(
   width: number,
   height: number,
-  amount: number
+  amount: number,
+  rng: () => number
 ): Buffer {
   const channels = 4;
   const buf = Buffer.alloc(width * height * channels);
@@ -123,7 +124,7 @@ function createNoise(
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const i = (y * width + x) * channels;
-      const noise = (Math.random() - 0.5) * 2 * amount * 255;
+      const noise = (rng() - 0.5) * 2 * amount * 255;
       const val = Math.round(Math.max(0, Math.min(255, 128 + noise)));
       buf[i] = val;
       buf[i + 1] = val;
@@ -253,7 +254,8 @@ export async function crtify(
   }
 
   const vignetteBuf = createVignette(width, height, o.vignetteStrength);
-  const noiseBuf = createNoise(width, height, o.noise);
+  const noiseRng = seededRandom(7);
+  const noiseBuf = createNoise(width, height, o.noise, noiseRng);
 
   const raw4 = { width, height, channels: 4 as const };
 
