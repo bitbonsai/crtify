@@ -14,6 +14,23 @@
 
 ---
 
+## Examples
+
+<p align="center">
+  <img src="crtify-pexels-0.webp" alt="Green preset" width="600" /><br />
+  <code>--preset green</code>
+</p>
+
+<p align="center">
+  <img src="crtify-pexels-1.webp" alt="Amber preset" width="600" /><br />
+  <code>--preset amber</code>
+</p>
+
+<p align="center">
+  <img src="crtify-pexels-2.webp" alt="White preset" width="600" /><br />
+  <code>--preset white</code>
+</p>
+
 ## Install
 
 ```bash
